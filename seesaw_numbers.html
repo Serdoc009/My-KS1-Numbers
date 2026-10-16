@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seesaw Numbers: Before and After</title>
+<style>
+:root{
+  --sky:#CDEBFF; --sky2:#E9F7FF; --grass:#7BC96F; --grass-d:#4FA64A;
+  --card:#FFFFFF; --ink:#1F2A44; --muted:#56627E;
+  --plank:#FF7A59; --pivot:#3D4A8A;
+  --before:#E07B00; --before-bg:#FFF0D9;
+  --after:#1E9E63; --after-bg:#DDF7EA;
+  --mid:#3D4A8A; --mid-bg:#E8EBFF;
+  --line:#B8C7E0; --star:#FFB800; --bad:#D64545;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --sky:#14233F; --sky2:#1B2E52; --grass:#2F7A3B; --grass-d:#276432;
+    --card:#22365C; --ink:#F2F6FF; --muted:#B5C3E3;
+    --plank:#FF8A6B; --pivot:#9BB0FF;
+    --before:#FFB347; --before-bg:#4A3416;
+    --after:#5BE0A1; --after-bg:#15433A;
+    --mid:#B7C3FF; --mid-bg:#2D3F77;
+    --line:#40588C; --star:#FFD24D; --bad:#FF7B7B;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --sky:#14233F; --sky2:#1B2E52; --grass:#2F7A3B; --grass-d:#276432;
+  --card:#22365C; --ink:#F2F6FF; --muted:#B5C3E3;
+  --plank:#FF8A6B; --pivot:#9BB0FF;
+  --before:#FFB347; --before-bg:#4A3416;
+  --after:#5BE0A1; --after-bg:#15433A;
+  --mid:#B7C3FF; --mid-bg:#2D3F77;
+  --line:#40588C; --star:#FFD24D; --bad:#FF7B7B;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; min-height:100vh; color:var(--ink);
+  background:linear-gradient(var(--sky) 0%, var(--sky2) 62%, var(--grass) 62%, var(--grass-d) 100%);
+  background-color:var(--sky);
+  font-family:"Trebuchet MS","Chalkboard SE","Comic Sans MS",system-ui,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{max-width:760px;margin:0 auto;padding:14px 14px 28px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h1{margin:0;font-size:clamp(22px,5vw,30px);line-height:1.1}
+.tools{display:flex;gap:8px}
+.icon-btn{border:3px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;min-width:48px;min-height:48px;font-size:22px;cursor:pointer}
+.panel{background:var(--card);border-radius:24px;padding:14px;border:3px solid var(--line)}
+button{font-family:inherit}
+button:focus-visible{outline:4px solid var(--pivot);outline-offset:3px}
+.settings{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:3px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:17px;font-weight:700;cursor:pointer;min-height:44px}
+.seg button[aria-pressed="true"]{background:var(--pivot);border-color:var(--pivot);color:var(--card)}
+.label{font-size:15px;color:var(--muted);font-weight:700;margin-right:4px}
+.prompt{font-size:clamp(24px,6vw,36px);font-weight:800;text-align:center;margin:2px 0}
+.b{color:var(--before)} .a{color:var(--after)}
+.stage{background:transparent}
+svg.seesaw{width:100%;height:auto;display:block;overflow:visible}
+#plank{transform-origin:300px 200px;transform-box:view-box;transition:transform .7s cubic-bezier(.3,1.4,.5,1)}
+.tile rect{stroke-width:5}
+.tile text{font-weight:800;text-anchor:middle;dominant-baseline:central;font-family:inherit}
+.t-before rect{fill:var(--before-bg);stroke:var(--before)} .t-before text{fill:var(--before)}
+.t-after rect{fill:var(--after-bg);stroke:var(--after)} .t-after text{fill:var(--after)}
+.t-mid rect{fill:var(--mid-bg);stroke:var(--mid)} .t-mid text{fill:var(--mid)}
+.t-ask rect{stroke-dasharray:10 8;animation:pulse 1.4s ease-in-out infinite}
+.t-ghost rect{fill:transparent;stroke:var(--line);stroke-dasharray:6 8} .t-ghost text{fill:var(--line)}
+.t-soft{opacity:.65}
+.tile{transform-box:fill-box;transform-origin:center}
+.pop{animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.4)}100%{transform:scale(1)}}
+@keyframes pulse{50%{opacity:.55}}
+.wiggle #plank{animation:wig .45s}
+@keyframes wig{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+.cap{font-size:22px;font-weight:800;text-anchor:middle;fill:var(--muted);font-family:inherit}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.choice{min-height:92px;border:4px solid var(--pivot);background:var(--card);color:var(--ink);border-radius:22px;font-size:clamp(40px,12vw,60px);font-weight:800;cursor:pointer;box-shadow:0 6px 0 var(--pivot);transition:transform .08s}
+.choice:active{transform:translateY(4px);box-shadow:0 2px 0 var(--pivot)}
+.choice.wrong{opacity:.35;pointer-events:none;border-color:var(--bad);box-shadow:none}
+.choice.shake{animation:shake .4s}
+.choice.hint{animation:hint 0.8s ease-in-out infinite}
+.choice.right{background:var(--after-bg);border-color:var(--after);box-shadow:0 6px 0 var(--after)}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes hint{50%{transform:scale(1.07)}}
+.msg{min-height:30px;text-align:center;font-size:20px;font-weight:700}
+.numline{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
+.nl{width:clamp(34px,9%,56px);aspect-ratio:1;border-radius:12px;border:3px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:clamp(14px,3.6vw,22px);background:var(--card);position:relative}
+.numline.big .nl{width:calc((100% - 5*5px)/6 - 1px)}
+.nl.cur{background:var(--mid-bg);border-color:var(--mid);color:var(--mid)}
+.nl.bf{background:var(--before-bg);border-color:var(--before);color:var(--before)}
+.nl.af{background:var(--after-bg);border-color:var(--after);color:var(--after)}
+.nlhelp{font-size:15px;color:var(--muted);text-align:center;margin:6px 0 0}
+.progress{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;font-size:26px}
+.progress span{filter:grayscale(1);opacity:.35;transition:all .3s}
+.progress span.on{filter:none;opacity:1;transform:scale(1.15)}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.big-btn{border:4px solid var(--pivot);background:var(--pivot);color:var(--card);font-size:24px;font-weight:800;padding:14px 28px;border-radius:999px;cursor:pointer;min-height:56px}
+.big-btn.alt{background:var(--card);color:var(--ink)}
+.hidden{display:none !important}
+.learn p{font-size:20px;line-height:1.45;margin:8px 0;text-align:center}
+.learn .tip{background:var(--mid-bg);border-radius:16px;padding:10px 14px;font-weight:700}
+.best{font-size:15px;color:var(--muted);text-align:center}
+.confetti{position:fixed;font-size:32px;pointer-events:none;z-index:20;animation:fly 1.2s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(260deg);opacity:0}}
+.done{text-align:center}
+.done .score{font-size:clamp(30px,8vw,48px);font-weight:800;margin:6px 0}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Seesaw Numbers</h1>
+    <div class="tools">
+      <button class="icon-btn" id="speakBtn" aria-pressed="true" aria-label="Voice on" title="Voice on or off">🔊</button>
+      <button class="icon-btn" id="learnBtn" aria-label="How it works" title="How it works">?</button>
+    </div>
+  </header>
+
+  <section class="panel learn" id="learn">
+    <div class="prompt">Before and after</div>
+    <svg class="seesaw" viewBox="0 0 600 300" id="demoSvg" role="img" aria-label="A seesaw with 4 before, 5 in the middle and 6 after"></svg>
+    <p><b class="b">Before</b> sits on the left. It is <b>one less</b>.<br><b class="a">After</b> sits on the right. It is <b>one more</b>.</p>
+    <p class="tip">To find <b class="b">before</b>, count back one.<br>To find <b class="a">after</b>, count on one.</p>
+    <div class="row"><button class="big-btn" id="startBtn">Let's play!</button></div>
+  </section>
+
+  <section class="panel hidden" id="game">
+    <div class="settings">
+      <div class="seg" id="modeSeg" role="group" aria-label="Question type">
+        <span class="label">Ask me:</span>
+        <button data-mode="mix" aria-pressed="true">Both</button>
+        <button data-mode="before" aria-pressed="false">Before</button>
+        <button data-mode="after" aria-pressed="false">After</button>
+      </div>
+      <div class="seg" id="rangeSeg" role="group" aria-label="Numbers">
+        <span class="label">Numbers:</span>
+        <button data-range="10" aria-pressed="true">1 to 10</button>
+        <button data-range="20" aria-pressed="false">1 to 20</button>
+      </div>
+    </div>
+    <div class="progress" id="progress" aria-label="Progress"></div>
+    <div class="prompt" id="prompt" aria-live="polite"></div>
+    <div class="stage" id="stage">
+      <svg class="seesaw" viewBox="0 0 600 300" id="gameSvg" role="img" aria-label="Seesaw"></svg>
+    </div>
+    <div class="msg" id="msg" aria-live="polite"></div>
+    <div class="choices" id="choices"></div>
+    <div class="row" style="margin-top:10px"><button class="big-btn alt" id="hearBtn">🔊 Hear it again</button></div>
+    <div id="nlWrap" style="margin-top:8px">
+      <div class="numline" id="numline"></div>
+      <p class="nlhelp" id="nlhelp">Number line: back is before, forward is after.</p>
+    </div>
+    <div class="best" id="best"></div>
+  </section>
+
+  <section class="panel done hidden" id="done">
+    <div class="prompt">Great job!</div>
+    <div class="score" id="finalScore"></div>
+    <div class="progress" id="finalStars"></div>
+    <p id="finalNote" style="font-size:20px;font-weight:700"></p>
+    <div class="row"><button class="big-btn" id="againBtn">Play again</button></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var state={mode:'mix',max:10,round:0,total:10,firstTry:0,tries:0,q:null,locked:false,voice:true,last:-1,done:false};
+  var WORDS=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+
+  /* ---------- storage (per-viewer convenience) ---------- */
+  function load(){try{var v=localStorage.getItem('seesaw-best');return v?JSON.parse(v):{}}catch(e){return {}}}
+  function save(o){try{localStorage.setItem('seesaw-best',JSON.stringify(o))}catch(e){}}
+
+  /* ---------- sound ---------- */
+  var ac=null;
+  function tone(freqs,dur,type,vol){
+    try{
+      ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+      var t=ac.currentTime;
+      freqs.forEach(function(f,i){
+        var o=ac.createOscillator(),g=ac.createGain();
+        o.type=type||'sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0.0001,t+i*dur);
+        g.gain.exponentialRampToValueAtTime(vol||0.18,t+i*dur+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+i*dur+dur);
+        o.connect(g);g.connect(ac.destination);o.start(t+i*dur);o.stop(t+i*dur+dur+0.02);
+      });
+    }catch(e){}
+  }
+  function speak(text){
+    if(!state.voice)return;
+    try{
+      if(!('speechSynthesis' in window))return;
+      window.speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(text);u.rate=0.85;u.pitch=1.1;u.lang='en-GB';
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  /* ---------- seesaw drawing ---------- */
+  function tile(cx,cy,cls,text,extra){
+    return '<g class="tile '+cls+(extra||'')+'" data-k="'+cls+'"><rect x="'+(cx-48)+'" y="'+(cy-48)+'" width="96" height="96" rx="20"/>'+
+           '<text x="'+cx+'" y="'+(cy+3)+'" font-size="'+(String(text).length>1?52:60)+'">'+text+'</text></g>';
+  }
+  function seesawSVG(o){
+    // o: left,mid,right: {text, cls, extra}
+    return '<ellipse cx="300" cy="278" rx="250" ry="14" fill="var(--grass-d)" opacity=".5"/>'+
+      '<polygon points="300,200 245,278 355,278" fill="var(--pivot)"/>'+
+      '<g id="plank" style="transform:rotate('+(o.tilt||0)+'deg)">'+
+        '<rect x="30" y="192" width="540" height="22" rx="11" fill="var(--plank)"/>'+
+        '<circle cx="300" cy="203" r="9" fill="var(--card)"/>'+
+        tile(105,138,o.left.cls,o.left.text,o.left.extra)+
+        tile(300,138,o.mid.cls,o.mid.text,o.mid.extra)+
+        tile(495,138,o.right.cls,o.right.text,o.right.extra)+
+        '<text class="cap" x="105" y="252" style="fill:var(--before)">before</text>'+
+        '<text class="cap" x="495" y="252" style="fill:var(--after)">after</text>'+
+      '</g>';
+  }
+
+  /* ---------- demo ---------- */
+  function drawDemo(){
+    $('demoSvg').innerHTML=seesawSVG({tilt:0,
+      left:{cls:'t-before',text:4},mid:{cls:'t-mid',text:5},right:{cls:'t-after',text:6}});
+  }
+
+  /* ---------- number line ---------- */
+  function drawLine(cur,showBA){
+    var nl=$('numline');nl.className='numline'+(state.max>10?' big':'');
+    var h='';
+    for(var i=0;i<=state.max;i++){
+      var c='nl';
+      if(i===cur)c+=' cur';
+      else if(showBA&&i===cur-1)c+=' bf';
+      else if(showBA&&i===cur+1)c+=' af';
+      h+='<div class="'+c+'">'+i+'</div>';
+    }
+    nl.innerHTML=h;
+  }
+
+  /* ---------- questions ---------- */
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+  function newQ(){
+    var n;
+    do{n=1+Math.floor(Math.random()*(state.max-1));}while(n===state.last);
+    state.last=n;
+    var type=state.mode==='mix'?(Math.random()<.5?'before':'after'):state.mode;
+    var ans=type==='before'?n-1:n+1;
+    var trap=type==='before'?n+1:n-1;
+    var extra=[n-2,n+2,ans+(type==='before'?-1:1)].filter(function(x){return x>=0&&x<=state.max&&x!==ans&&x!==trap&&x!==n});
+    var pick=extra[Math.floor(Math.random()*extra.length)];
+    var choices=shuffle([ans,trap,pick]);
+    state.q={n:n,type:type,ans:ans,trap:trap,choices:choices};
+    state.tries=0;state.locked=false;
+    render();
+    speak('What comes '+type+' '+n+'?');
+  }
+  function render(){
+    var q=state.q;var isB=q.type==='before';
+    $('prompt').innerHTML='What comes <b class="'+(isB?'b':'a')+'">'+q.type+'</b> '+q.n+'?';
+    var ask={cls:(isB?'t-before':'t-after'),text:'?',extra:' t-ask'};
+    var ghost={cls:'t-ghost',text:'',extra:''};
+    $('gameSvg').innerHTML=seesawSVG({tilt:isB?-8:8,
+      left:isB?ask:ghost,mid:{cls:'t-mid',text:q.n},right:isB?ghost:ask});
+    $('stage').classList.remove('wiggle');
+    $('msg').textContent='';
+    var ch=$('choices');ch.innerHTML='';
+    q.choices.forEach(function(v){
+      var b=document.createElement('button');b.className='choice';b.textContent=v;b.setAttribute('data-v',v);
+      b.setAttribute('aria-label',String(v)+' ('+WORDS[v]+')');
+      b.addEventListener('click',function(){answer(b,v)});ch.appendChild(b);
+    });
+    drawLine(q.n,false);
+    $('nlhelp').textContent=isB?'Number line: step back one to find before.':'Number line: step on one to find after.';
+    drawStars();
+  }
+  function drawStars(){
+    var h='';for(var i=0;i<state.total;i++)h+='<span class="'+(i<state.round?'on':'')+'">⭐</span>';
+    $('progress').innerHTML=h;
+  }
+  function confetti(){
+    var em=['⭐','🌟','✨','🎈','🎉'];
+    for(var i=0;i<10;i++){
+      var s=document.createElement('div');s.className='confetti';s.textContent=em[i%em.length];
+      s.style.left=(30+Math.random()*40)+'vw';s.style.top=(30+Math.random()*20)+'vh';
+      s.style.setProperty('--dx',((Math.random()-.5)*300)+'px');s.style.setProperty('--dy',(-80-Math.random()*200)+'px');
+      document.body.appendChild(s);setTimeout(function(el){return function(){el.remove()}}(s),1300);
+    }
+  }
+  function answer(btn,v){
+    if(state.locked)return;
+    var q=state.q;
+    if(v===q.ans){
+      state.locked=true;
+      btn.classList.add('right');
+      var isB=q.type==='before';
+      var fill={cls:isB?'t-before':'t-after',text:q.ans,extra:' pop'};
+      var other={cls:isB?'t-after':'t-before',text:isB?q.n+1:q.n-1,extra:' t-soft'};
+      $('gameSvg').innerHTML=seesawSVG({tilt:0,
+        left:isB?fill:other,mid:{cls:'t-mid',text:q.n},right:isB?other:fill});
+      drawLine(q.n,true);
+      var line=(q.type==='before')?q.ans+' comes before '+q.n+'. One less!':q.ans+' comes after '+q.n+'. One more!';
+      $('msg').textContent=line;
+      tone([523,659,784],0.12,'triangle');
+      confetti();
+      if(state.tries===0)state.firstTry++;
+      state.round++;drawStars();
+      speak(WORDS[q.ans]+' comes '+q.type+' '+WORDS[q.n]+'.');
+      setTimeout(function(){ if(state.round>=state.total)finish();else newQ(); },2600);
+    }else{
+      state.tries++;
+      btn.classList.add('wrong','shake');
+      tone([220,180],0.16,'sine',0.14);
+      $('stage').classList.remove('wiggle');void $('stage').offsetWidth;$('stage').classList.add('wiggle');
+      drawLine(q.n,true);
+      var hint=q.type==='before'?'Not quite. Before means one less. Count back one.':'Not quite. After means one more. Count on one.';
+      $('msg').textContent=hint;speak(hint);
+      if(state.tries>=2){
+        var all=document.querySelectorAll('.choice');
+        for(var i=0;i<all.length;i++){if(Number(all[i].getAttribute('data-v'))===q.ans)all[i].classList.add('hint')}
+      }
+    }
+  }
+  function finish(){
+    var best=load();var key='b'+state.max+state.mode;
+    if(!best[key]||state.firstTry>best[key])best[key]=state.firstTry;save(best);
+    $('game').classList.add('hidden');$('done').classList.remove('hidden');
+    $('finalScore').textContent=state.firstTry+' of '+state.total+' on the first try';
+    var h='';for(var i=0;i<state.total;i++)h+='<span class="'+(i<state.firstTry?'on':'')+'">⭐</span>';
+    $('finalStars').innerHTML=h;
+    $('finalNote').textContent=state.firstTry>=8?'Brilliant! You know your before and after.':state.firstTry>=5?'Good going! Play again to get even more stars.':'Well done for trying! Playing again helps your brain remember.';
+    tone([523,659,784,1047],0.14,'triangle');confetti();
+    speak('Great job! You got '+state.firstTry+' on the first try.');
+  }
+  function start(){
+    state.round=0;state.firstTry=0;state.last=-1;
+    $('learn').classList.add('hidden');$('done').classList.add('hidden');$('game').classList.remove('hidden');
+    showBest();newQ();
+  }
+  function showBest(){var b=load();var k='b'+state.max+state.mode;$('best').textContent=b[k]!=null?'Best so far: '+b[k]+' stars on the first try':'';}
+
+  /* ---------- wiring ---------- */
+  function seg(id,attr,cb){
+    var btns=$(id).querySelectorAll('button');
+    for(var i=0;i<btns.length;i++)(function(b){b.addEventListener('click',function(){
+      for(var j=0;j<btns.length;j++)btns[j].setAttribute('aria-pressed','false');
+      b.setAttribute('aria-pressed','true');cb(b.getAttribute(attr));
+    })})(btns[i]);
+  }
+  seg('modeSeg','data-mode',function(v){state.mode=v;start()});
+  seg('rangeSeg','data-range',function(v){state.max=Number(v);start()});
+  $('startBtn').addEventListener('click',start);
+  $('againBtn').addEventListener('click',start);
+  $('hearBtn').addEventListener('click',function(){var q=state.q;if(q){var was=state.voice;state.voice=true;speak('What comes '+q.type+' '+q.n+'?');state.voice=was;}});
+  $('speakBtn').addEventListener('click',function(){
+    state.voice=!state.voice;this.setAttribute('aria-pressed',String(state.voice));
+    this.textContent=state.voice?'🔊':'🔇';this.setAttribute('aria-label',state.voice?'Voice on':'Voice off');
+    if(!state.voice){try{window.speechSynthesis.cancel()}catch(e){}}
+  });
+  $('learnBtn').addEventListener('click',function(){
+    $('game').classList.add('hidden');$('done').classList.add('hidden');$('learn').classList.remove('hidden');
+    speak('Before is on the left. It is one less. After is on the right. It is one more.');
+  });
+  drawDemo();
+})();
+</script>
+</body>
+</html>
